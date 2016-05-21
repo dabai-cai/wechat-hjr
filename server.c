@@ -6,7 +6,7 @@ int main(int argc,char **argv)
 {
     int listenfd;
     int connfd;
-    struct sockaddr_in servaddr;
+    struct sockaddr_in servaddr,cliaddr;
     listenfd=socket(PF_INET,SOCK_STREAM,0);
 
     bzero(&servaddr,sizeof(servaddr));
@@ -17,17 +17,22 @@ int main(int argc,char **argv)
     bind(listenfd,(struct sockaddr *)&servaddr,sizeof(servaddr));
 
     listen(listenfd,10);
-    connfd=accept(listenfd,(struct sockaddr *) NULL,NULL);
-
+    int clilen;
+    connfd=accept(listenfd,(struct sockaddr *)&cliaddr,&clilen);
+    
     int n;
-    char recvline[1024];
-
-    while((n=read(connfd,recvline,1024))>0)
+    char recvline[1024],sen[1024];
+    while(1)
     {
+    while((n=read(connfd,recvline,1024))>0)
+    {   
         recvline[n]=0;
+        printf("黄锦荣:\n");
         printf("%s\n",recvline);
+        gets(sen);
+        send(connfd,sen,strlen(sen),0);
+    }
     }
     close(connfd);
     close(listenfd);
-
 }
