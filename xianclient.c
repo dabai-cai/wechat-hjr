@@ -6,7 +6,7 @@
 #include<netinet/in.h>
 #include<pthread.h>
 #include<sys/socket.h>
-
+#include<unistd.h>
 #define BUF_SIZE 1024
 #define NAME_SIZE 20
 typedef struct message
@@ -23,7 +23,7 @@ MSG msg;
 
 int main(int argc,char *argv[])
 {
-   int sock;strcpy(name,argv[3]);
+   int sock;strcpy(name,argv[3]);strcat(name,"\0");
    struct sockaddr_in serv_addr;
    pthread_t snd_thread,rcv_thread;
    void *thread_return;
@@ -55,19 +55,20 @@ int main(int argc,char *argv[])
  pthread_create(&rcv_thread,NULL,recv_msg,(void*)&sock);
  pthread_join(snd_thread,&thread_return);
  pthread_join(rcv_thread,&thread_return);
- 
  close(sock);
- return 1;
-
+ return 0;
 }
 
 void *send_msg(void *arg)
 {
   int sock=*((int *)arg);
-  MSG msg;strcpy(msg.name,name);
+ strcpy(msg.name,name);
   while(1)
  {
    fgets(msg.file,BUF_SIZE,stdin);
+   if(strcmp(msg.file,"q\n")==0||strcmp(msg.file,"Q\n")==0)
+     {close(sock); exit(0);}
+
    write(sock,&msg,sizeof(MSG));
  }
  return NULL;
@@ -75,18 +76,16 @@ void *send_msg(void *arg)
 
 void *recv_msg(void *arg)
 {
-  MSG msg;
   int sock=*((int *)arg);
   int str_len=0;
   char temp[BUF_SIZE];
   while(1)
  {
-    str_len=read(sock,&msg,sizeof(MSG));
-    if(strcmp(temp,msg.file)==0)continue;
-    else strcpy(temp,msg.file);
+    str_len=read(sock,&msg,sizeof(msg));
     if(str_len==-1)
      return (void*)-1;
-   msg.file[str_len]=0;
+    else printf("%d\n",str_len);
+   sleep(5);
   fputs(msg.name,stdout);fputs(msg.file,stdout);
  }
  return NULL;

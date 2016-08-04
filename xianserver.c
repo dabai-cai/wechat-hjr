@@ -14,7 +14,7 @@ typedef struct message
      char file[BUF_SIZE];
 }MSG;
 
-
+MSG msg;
 pthread_mutex_t mutx;
 void * control_clnt(void *arg);
 void send_msg(MSG msg,int len);
@@ -59,12 +59,10 @@ int main(int argc,char *argv[])
     while(1){
     clnt_adr_sz=sizeof(clnt_addr);
     clnt_sock=accept(serv_sock,(struct sockaddr*)&clnt_addr,&clnt_adr_sz);
-    /*if(clnt_sock==-1){
+    if(clnt_sock==-1){
     printf("fail to connect the client!\n");
     exit(1);
     } 
-    else*/
-   
     
     pthread_mutex_lock(&mutx);
          clnt_socks[sum_clnt++]=clnt_sock;
@@ -72,6 +70,7 @@ int main(int argc,char *argv[])
 
     pthread_create(&t_id,NULL,control_clnt,(void*)&clnt_sock);
     pthread_detach(t_id);
+    //if(pthread_detach(t_id)==0)close(clnt_sock);
      printf("connect the client IP :%s \n",inet_ntoa(clnt_addr.sin_addr));
    }
    close(serv_sock);
@@ -81,20 +80,20 @@ void *control_clnt(void *arg)
 {
     int clnt_sock=*((int *)arg);
     int str_len=0,i;
-    MSG msg;
-    while((str_len=read(clnt_sock,&msg,sizeof(MSG)))!=0)
+    while((str_len=read(clnt_sock,&msg,sizeof(msg)))!=0)
       send_msg(msg,str_len);
+
     pthread_mutex_lock(&mutx);
     for(i=0;i<sum_clnt;i++)
       if(clnt_sock==clnt_socks[i])
       {
-          while(i++<sum_clnt-1)
-            clnt_socks[i]=clnt_socks[i+1];
+          while(i<sum_clnt-1)
+            {clnt_socks[i]=clnt_socks[i+1];i++;}
           break;
       }
     sum_clnt--;
     pthread_mutex_unlock(&mutx);
-    close(clnt_sock);
+    close(clnt_sock);printf("关灯!\n");
     return NULL;
 }
 
@@ -102,7 +101,7 @@ void send_msg(MSG msg,int len)
 {
     int i;
     pthread_mutex_lock(&mutx);
-    for(i=0;i<sum_clnt;i++)
+    for(i=0;i<sum_clnt;i++)    
       write(clnt_socks[i],&msg,len);
     pthread_mutex_unlock(&mutx);
 }
